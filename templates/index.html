@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI論文まとめ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      min-height: 100vh;
+    }
+
+    /* ロゴ・タイトルエリア */
+    .hero {
+      text-align: center;
+      padding: 48px 20px 32px;
+    }
+
+    .hero-icon {
+      width: 80px;
+      height: 80px;
+      background: #ff6600;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(255,102,0,0.25);
+    }
+
+    .hero-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #1c1c1e;
+      line-height: 1.2;
+    }
+
+    .hero-sub {
+      font-size: 0.85rem;
+      color: #8e8e93;
+      margin-top: 8px;
+    }
+
+    /* コンテンツ */
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 16px 60px;
+    }
+
+    /* 日付・フィルタ */
+    .date-row {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .date-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1c1c1e;
+      margin-bottom: 14px;
+    }
+
+    .filter-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .seg-control {
+      display: inline-flex;
+      background: #e5e5ea;
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .seg-btn {
+      padding: 5px 14px;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: #636366;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .seg-btn.active {
+      background: #fff;
+      color: #1c1c1e;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.13);
+    }
+
+    /* 論文リスト */
+    .paper-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .paper-item {
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px 18px 18px 14px;
+      display: flex;
+      gap: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .paper-number {
+      width: 28px;
+      height: 28px;
+      background: #1c1c1e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .paper-body { flex: 1; min-width: 0; }
+
+    .paper-title-ja {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1c1c1e;
+      line-height: 1.5;
+      margin-bottom: 5px;
+    }
+
+    .paper-title-en {
+      font-size: 0.8rem;
+      color: #8e8e93;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .paper-title-en:hover { color: #ff6600; }
+
+    .paper-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .meta-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .meta-tag.author {
+      background: #f2f2f7;
+      color: #636366;
+    }
+
+    .meta-tag.date {
+      background: #f2f2f7;
+      color: #636366;
+    }
+
+    .meta-tag.citation {
+      background: #ffe5d0;
+      color: #cc4400;
+    }
+
+    .paper-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border: 1.5px solid #e5e5ea;
+      border-radius: 20px;
+      background: #fff;
+      cursor: pointer;
+      color: #3a3a3c;
+      transition: all 0.1s;
+    }
+
+    .btn:hover { background: #f2f2f7; border-color: #d1d1d6; }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .expand-box, .summary-box, .importance-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: #3a3a3c;
+    }
+
+    .expand-box { background: #f2f2f7; }
+
+    .summary-box {
+      background: #fffbf0;
+      border-left: 3px solid #ffcc00;
+    }
+
+    .importance-box {
+      background: #f0f6ff;
+      border-left: 3px solid #007aff;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: #8e8e93;
+      font-size: 0.9rem;
+      background: #fff;
+      border-radius: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .hero { padding: 32px 16px 24px; }
+      .hero-icon { width: 64px; height: 64px; font-size: 1.6rem; }
+      .hero-title { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヒーロー -->
+  <div class="hero">
+    <div class="hero-icon">📄</div>
+    <div class="hero-title">AI論文まとめ</div>
+    <div class="hero-sub">社会・倫理系の arXiv 論文を、文系向けにやさしく届けます</div>
+  </div>
+
+  <div class="container">
+
+    <!-- 日付・フィルタ -->
+    <form method="get" action="/">
+      <div class="date-row">
+        <div class="filter-row">
+          <div class="seg-control">
+            {% for period_id, period_label in periods.items() %}
+            <button type="button" class="seg-btn {% if period == period_id %}active{% endif %}"
+              onclick="setPeriod('{{ period_id }}')">{{ period_label }}</button>
+            {% endfor %}
+          </div>
+          <div class="seg-control">
+            <button type="button" class="seg-btn {% if sort == 'new' %}active{% endif %}"
+              onclick="setSort('new')">新着順</button>
+            <button type="button" class="seg-btn {% if sort == 'popularity' %}active{% endif %}"
+              onclick="setSort('popularity')">引用数順</button>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" name="sort" id="sort-input" value="{{ sort }}">
+      <input type="hidden" name="period" id="period-input" value="{{ period }}">
+    </form>
+
+    <!-- 論文リスト -->
+    <div class="paper-list">
+      {% if papers %}
+        {% for paper in papers %}
+        <div class="paper-item">
+          <div class="paper-number">{{ loop.index }}</div>
+          <div class="paper-body">
+            <div class="paper-title-ja">{{ paper.get('title_ja', paper.title) }}</div>
+            <a class="paper-title-en" href="{{ paper.arxiv_id }}" target="_blank" rel="noopener">
+              {{ paper.title }} ↗
+            </a>
+            <div class="paper-meta">
+              <span class="meta-tag author">{{ paper.authors[0] if paper.authors else '' }}{% if paper.authors | length > 1 %} ほか{% endif %}</span>
+              <span class="meta-tag date">{{ paper.get('submitted', '') }}</span>
+              {% if paper.get('citation_count') is not none and sort == 'popularity' %}
+              <span class="meta-tag citation">引用 {{ paper.citation_count }}件</span>
+              {% endif %}
+            </div>
+
+            <script type="application/json" class="paper-data">
+              {{ {"arxiv_id": paper.arxiv_id, "title": paper.title, "abstract": paper.abstract} | tojson }}
+            </script>
+
+            <div class="paper-actions">
+              <button class="btn" onclick="toggleAbstract(this)">アブストラクト</button>
+              <button class="btn" onclick="toggleSummary(this)">✦ AI要約</button>
+              <button class="btn" onclick="toggleImportance(this)">💡 なぜ重要？</button>
+            </div>
+            <div class="expand-box" style="display:none;"></div>
+            <div class="summary-box" style="display:none;"></div>
+            <div class="importance-box" style="display:none;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">該当する論文が見つかりませんでした。<br>期間を変えてみてください。</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <script>
+    function setSort(value) {
+      document.getElementById('sort-input').value = value;
+      document.querySelector('form').submit();
+    }
+    function setPeriod(value) {
+      document.getElementById('period-input').value = value;
+      document.querySelector('form').submit();
+    }
+    function getPaperData(btn) {
+      return JSON.parse(btn.closest('.paper-body').querySelector('.paper-data').textContent);
+    }
+    async function toggleAbstract(btn) {
+      const body = btn.closest('.paper-body');
+      const box = body.querySelector('.expand-box');
+      if (box.style.display !== 'none') {
+        box.style.display = 'none';
+        btn.textContent = 'アブストラクト';
+        return;
+      }
+      if (box.textContent.trim()) {
+        box.style.display = 'block';
+        btn.textContent = '閉じる';
+        return;
+      }
+      const { abstract } = getPaperData(btn);
+      btn.disabled = true;
+      btn.textContent = '翻訳中...';
+      try {
+        const res = await fetch('/translate_abstract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ abstract })
+        });
+        const data = await res.json();
+        box.textContent = data.abstract_ja;
+        box.style.display = 'block';
+        btn.textContent = '閉じる';
+      } catch {
+        btn.textContent = 'エラー';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    async function toggleSummary(btn) {
+      const body = btn.closest('.paper-body');
+      const box = body.querySelector('.summary-box');
+      if (box.style.display !== 'none') {
+        box.style.display = 'none';
+        btn.textContent = '✦ AI要約';
+        return;
+      }
+      if (box.textContent.trim()) {
+        box.style.display = 'block';
+        btn.textContent = '✦ 閉じる';
+        return;
+      }
+      const { arxiv_id, title, abstract } = getPaperData(btn);
+      btn.disabled = true;
+      btn.textContent = '生成中...';
+      try {
+        const res = await fetch('/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ arxiv_id, title, abstract })
+        });
+        const data = await res.json();
+        box.textContent = data.summary;
+        box.style.display = 'block';
+        btn.textContent = '✦ 閉じる';
+      } catch { btn.textContent = 'エラー'; }
+      finally { btn.disabled = false; }
+    }
+    async function toggleImportance(btn) {
+      const body = btn.closest('.paper-body');
+      const box = body.querySelector('.importance-box');
+      if (box.style.display !== 'none') {
+        box.style.display = 'none';
+        btn.textContent = '💡 なぜ重要？';
+        return;
+      }
+      if (box.textContent.trim()) {
+        box.style.display = 'block';
+        btn.textContent = '💡 閉じる';
+        return;
+      }
+      const { title, abstract } = getPaperData(btn);
+      btn.disabled = true;
+      btn.textContent = '生成中...';
+      try {
+        const res = await fetch('/importance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, abstract })
+        });
+        const data = await res.json();
+        box.textContent = data.importance;
+        box.style.display = 'block';
+        btn.textContent = '💡 閉じる';
+      } catch { btn.textContent = 'エラー'; }
+      finally { btn.disabled = false; }
+    }
+  </script>
+
+</body>
+</html>
