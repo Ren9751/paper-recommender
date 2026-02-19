@@ -2,18 +2,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, render_template, request, jsonify
-from fetcher import fetch_papers
+from semantic_scholar import fetch_papers, is_cached
 
 app = Flask(__name__)
 
 PERIODS = {
-    "day":   "1日",
     "week":  "1週間",
     "month": "1ヶ月",
     "year":  "1年",
+    "5year": "5年",
+    "all":   "全期間",
 }
-
-PERIOD_MAX = {"day": 20, "week": 40, "month": 40, "year": 40}
 
 
 @app.route("/")
@@ -24,12 +23,10 @@ def index():
     if period not in PERIODS:
         period = "week"
 
-    max_results = PERIOD_MAX.get(period, 30)
-    papers = fetch_papers(category="cs.CY", max_results=max_results, period=period)
+    cached = is_cached(period)
+    papers = fetch_papers(period=period, max_results=40)
 
     if sort == "popularity":
-        from semantic_scholar import fetch_citation_counts
-        papers = fetch_citation_counts(papers)
         papers.sort(key=lambda p: p["citation_count"], reverse=True)
 
     from llm import translate_titles
@@ -41,6 +38,7 @@ def index():
         periods=PERIODS,
         period=period,
         sort=sort,
+        cached=cached,
     )
 
 
