@@ -26,14 +26,15 @@ def index():
     period = request.args.get("period", "week")
     sort = request.args.get("sort", "new")
     field_group = request.args.get("field_group", "cs")
+    query = request.args.get("query", "")
 
     if period not in PERIODS:
         period = "week"
     if field_group not in FIELD_GROUP_LABELS:
         field_group = "cs"
 
-    cached = is_cached(period, field_group)
-    papers = fetch_papers(period=period, max_results=40, field_group=field_group)
+    cached = is_cached(period, field_group, query)
+    papers = fetch_papers(period=period, max_results=40, field_group=field_group, query=query)
 
     if sort == "popularity":
         papers.sort(key=lambda p: p["citation_count"], reverse=True)
@@ -50,6 +51,7 @@ def index():
         field_groups=FIELD_GROUP_LABELS,
         field_group=field_group,
         cached=cached,
+        query=query,
     )
 
 
