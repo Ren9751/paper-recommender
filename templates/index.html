@@ -324,10 +324,17 @@
             <button type="button" class="seg-btn {% if sort == 'popularity' %}active{% endif %}"
               onclick="setSort('popularity')">引用数順</button>
           </div>
+          <div class="seg-control">
+            {% for fg_id, fg_label in field_groups.items() %}
+            <button type="button" class="seg-btn {% if field_group == fg_id %}active{% endif %}"
+              onclick="setFieldGroup('{{ fg_id }}')">{{ fg_label }}</button>
+            {% endfor %}
+          </div>
         </div>
       </div>
       <input type="hidden" name="sort" id="sort-input" value="{{ sort }}">
       <input type="hidden" name="period" id="period-input" value="{{ period }}">
+      <input type="hidden" name="field_group" id="field-group-input" value="{{ field_group }}">
     </form>
 
     <!-- 論文リスト -->
@@ -386,6 +393,11 @@
     }
     function setPeriod(value) {
       document.getElementById('period-input').value = value;
+      showLoading();
+      document.querySelector('form').submit();
+    }
+    function setFieldGroup(value) {
+      document.getElementById('field-group-input').value = value;
       showLoading();
       document.querySelector('form').submit();
     }

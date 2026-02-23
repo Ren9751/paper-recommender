@@ -7,26 +7,36 @@ CACHE_TTL_MINUTES = 60
 
 PERIOD_DAYS = {"week": 7, "month": 30, "year": 365, "5year": 1825}
 
+# Semantic Scholar fieldsOfStudy 値のグループ定義
+FIELD_GROUPS = {
+    "cs": "Computer Science",
+    "humanities": "Philosophy,Law,Sociology,Political Science,History,Economics,Psychology",
+    "all": "Computer Science,Philosophy,Law,Sociology,Political Science,History,Economics,Psychology",
+}
+
 def _api_headers() -> dict:
     key = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "")
     return {"x-api-key": key} if key else {}
 
 
-def is_cached(period: str) -> bool:
+def is_cached(period: str, field_group: str = "cs") -> bool:
+    cache_key = f"{period}:{field_group}"
     now = datetime.now(timezone.utc)
-    return period in _cache and _cache[period]["expires"] > now
+    return cache_key in _cache and _cache[cache_key]["expires"] > now
 
 
-def fetch_papers(period: str = "week", max_results: int = 40) -> list[dict]:
-    cache_key = period
+def fetch_papers(period: str = "week", max_results: int = 40, field_group: str = "cs") -> list[dict]:
+    cache_key = f"{period}:{field_group}"
     now = datetime.now(timezone.utc)
 
     if cache_key in _cache and _cache[cache_key]["expires"] > now:
         return _cache[cache_key]["papers"]
 
+    fields_of_study = FIELD_GROUPS.get(field_group, FIELD_GROUPS["cs"])
+
     params = {
         "query": "AI ethics society technology policy",
-        "fieldsOfStudy": "Computer Science",
+        "fieldsOfStudy": fields_of_study,
         "fields": "title,abstract,authors,publicationDate,externalIds,citationCount",
         "limit": max_results,
         "sort": "publicationDate:desc",
@@ -66,3 +76,8 @@ def fetch_papers(period: str = "week", max_results: int = 40) -> list[dict]:
 
     _cache[cache_key] = {"papers": papers, "expires": now + timedelta(minutes=CACHE_TTL_MINUTES)}
     return papers
+
+
+def get_field_groups() -> dict:
+    """利用可能なフィールドグループの定義を返す（app.py / テンプレート用）。"""
+    return FIELD_GROUPS
