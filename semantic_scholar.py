@@ -7,6 +7,8 @@ CACHE_TTL_MINUTES = 60
 
 PERIOD_DAYS = {"week": 7, "month": 30, "year": 365, "5year": 1825}
 
+DEFAULT_QUERY = "AI ethics society technology policy"
+
 # Semantic Scholar fieldsOfStudy 値のグループ定義
 FIELD_GROUPS = {
     "cs": "Computer Science",
@@ -19,23 +21,24 @@ def _api_headers() -> dict:
     return {"x-api-key": key} if key else {}
 
 
-def is_cached(period: str, field_group: str = "cs") -> bool:
-    cache_key = f"{period}:{field_group}"
+def is_cached(period: str, field_group: str = "cs", query: str = "") -> bool:
+    cache_key = f"{period}:{field_group}:{query}"
     now = datetime.now(timezone.utc)
     return cache_key in _cache and _cache[cache_key]["expires"] > now
 
 
-def fetch_papers(period: str = "week", max_results: int = 40, field_group: str = "cs") -> list[dict]:
-    cache_key = f"{period}:{field_group}"
+def fetch_papers(period: str = "week", max_results: int = 40, field_group: str = "cs", query: str = "") -> list[dict]:
+    cache_key = f"{period}:{field_group}:{query}"
     now = datetime.now(timezone.utc)
 
     if cache_key in _cache and _cache[cache_key]["expires"] > now:
         return _cache[cache_key]["papers"]
 
     fields_of_study = FIELD_GROUPS.get(field_group, FIELD_GROUPS["cs"])
+    actual_query = query.strip() if query.strip() else DEFAULT_QUERY
 
     params = {
-        "query": "AI ethics society technology policy",
+        "query": actual_query,
         "fieldsOfStudy": fields_of_study,
         "fields": "title,abstract,authors,publicationDate,externalIds,citationCount",
         "limit": max_results,
