@@ -16,17 +16,27 @@ PERIODS = {
     "all":   "全期間",
 }
 
+FIELD_GROUP_LABELS = {
+    "cs":         "CS",
+    "humanities": "哲学・法・社会",
+    "all":        "全分野",
+}
+
 
 @app.route("/")
 def index():
     period = request.args.get("period", "week")
     sort = request.args.get("sort", "new")
+    field_group = request.args.get("field_group", "cs")
+    query = request.args.get("query", "")
 
     if period not in PERIODS:
         period = "week"
+    if field_group not in FIELD_GROUP_LABELS:
+        field_group = "cs"
 
-    cached = is_cached(period)
-    papers = fetch_papers(period=period, max_results=40)
+    cached = is_cached(period, field_group, query)
+    papers = fetch_papers(period=period, max_results=40, field_group=field_group, query=query)
 
     if sort == "popularity":
         papers.sort(key=lambda p: p["citation_count"], reverse=True)
@@ -40,7 +50,10 @@ def index():
         periods=PERIODS,
         period=period,
         sort=sort,
+        field_groups=FIELD_GROUP_LABELS,
+        field_group=field_group,
         cached=cached,
+        query=query,
     )
 
 

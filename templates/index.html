@@ -241,6 +241,74 @@
       border-radius: 14px;
     }
 
+    /* 検索バー */
+    .search-wrap {
+      max-width: 640px;
+      margin: 0 auto 24px;
+      padding: 0 16px;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 8px 8px 8px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 10px;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.95rem;
+      color: #1c1c1e;
+      background: transparent;
+      font-family: inherit;
+    }
+
+    .search-input::placeholder { color: #aeaeb2; }
+
+    .search-btn {
+      background: #ff6600;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 7px 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .search-btn:hover { background: #e55a00; }
+
+    .search-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-chip {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: #f2f2f7;
+      color: #636366;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-chip:hover, .preset-chip.active {
+      background: #ff6600;
+      color: #fff;
+    }
+
     @media (max-width: 480px) {
       .hero { padding: 32px 16px 24px; }
       .hero-icon { width: 64px; height: 64px; font-size: 1.6rem; }
@@ -306,10 +374,41 @@
     <div class="hero-sub">社会・倫理系の arXiv 論文を、文系向けにやさしく届けます</div>
   </div>
 
+  <!-- 検索バー -->
+  <div class="search-wrap">
+    <form method="get" action="/" id="main-form">
+      <div class="search-bar">
+        <input type="text" class="search-input" name="query" id="query-input"
+          placeholder="キーワードを入力（例: AI safety, fake news）"
+          value="{{ query }}" autocomplete="off">
+        <button type="submit" class="search-btn">検索</button>
+      </div>
+      <div class="search-presets">
+        <button type="button" class="preset-chip {% if query == 'AI safety' %}active{% endif %}"
+          onclick="setQuery('AI safety')">AI safety</button>
+        <button type="button" class="preset-chip {% if query == 'fake news' %}active{% endif %}"
+          onclick="setQuery('fake news')">フェイクニュース</button>
+        <button type="button" class="preset-chip {% if query == 'privacy' %}active{% endif %}"
+          onclick="setQuery('privacy')">プライバシー</button>
+        <button type="button" class="preset-chip {% if query == 'AI governance' %}active{% endif %}"
+          onclick="setQuery('AI governance')">ガバナンス</button>
+        <button type="button" class="preset-chip {% if query == 'algorithmic bias' %}active{% endif %}"
+          onclick="setQuery('algorithmic bias')">アルゴリズムバイアス</button>
+        <button type="button" class="preset-chip {% if query == 'misinformation' %}active{% endif %}"
+          onclick="setQuery('misinformation')">誤情報</button>
+        <button type="button" class="preset-chip {% if query == '' %}active{% endif %}"
+          onclick="setQuery('')">デフォルト</button>
+      </div>
+      <input type="hidden" name="sort" id="sort-input" value="{{ sort }}">
+      <input type="hidden" name="period" id="period-input" value="{{ period }}">
+      <input type="hidden" name="field_group" id="field-group-input" value="{{ field_group }}">
+    </form>
+  </div>
+
   <div class="container">
 
     <!-- 日付・フィルタ -->
-    <form method="get" action="/">
+    <div>
       <div class="date-row">
         <div class="filter-row">
           <div class="seg-control">
@@ -324,11 +423,15 @@
             <button type="button" class="seg-btn {% if sort == 'popularity' %}active{% endif %}"
               onclick="setSort('popularity')">引用数順</button>
           </div>
+          <div class="seg-control">
+            {% for fg_id, fg_label in field_groups.items() %}
+            <button type="button" class="seg-btn {% if field_group == fg_id %}active{% endif %}"
+              onclick="setFieldGroup('{{ fg_id }}')">{{ fg_label }}</button>
+            {% endfor %}
+          </div>
         </div>
       </div>
-      <input type="hidden" name="sort" id="sort-input" value="{{ sort }}">
-      <input type="hidden" name="period" id="period-input" value="{{ period }}">
-    </form>
+    </div>
 
     <!-- 論文リスト -->
     <div class="paper-list">
@@ -382,12 +485,22 @@
     function setSort(value) {
       document.getElementById('sort-input').value = value;
       showLoading();
-      document.querySelector('form').submit();
+      document.getElementById('main-form').submit();
     }
     function setPeriod(value) {
       document.getElementById('period-input').value = value;
       showLoading();
-      document.querySelector('form').submit();
+      document.getElementById('main-form').submit();
+    }
+    function setFieldGroup(value) {
+      document.getElementById('field-group-input').value = value;
+      showLoading();
+      document.getElementById('main-form').submit();
+    }
+    function setQuery(value) {
+      document.getElementById('query-input').value = value;
+      showLoading();
+      document.getElementById('main-form').submit();
     }
     function getPaperData(btn) {
       return JSON.parse(btn.closest('.paper-body').querySelector('.paper-data').textContent);
