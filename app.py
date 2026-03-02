@@ -1,3 +1,5 @@
+import os
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -46,6 +48,8 @@ def index():
 def translate_abstract():
     from llm import translate_abstract
     data = request.json
+    if not data or "abstract" not in data:
+        return jsonify({"error": "abstract is required"}), 400
     result = translate_abstract(data["abstract"])
     return jsonify({"abstract_ja": result})
 
@@ -54,6 +58,8 @@ def translate_abstract():
 def summarize():
     from llm import summarize
     data = request.json
+    if not data or "title" not in data or "abstract" not in data:
+        return jsonify({"error": "title and abstract are required"}), 400
     result = summarize(data["title"], data["abstract"])
     return jsonify({"summary": result})
 
@@ -62,9 +68,11 @@ def summarize():
 def importance():
     from llm import explain_importance
     data = request.json
+    if not data or "title" not in data or "abstract" not in data:
+        return jsonify({"error": "title and abstract are required"}), 400
     result = explain_importance(data["title"], data["abstract"])
     return jsonify({"importance": result})
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true")
