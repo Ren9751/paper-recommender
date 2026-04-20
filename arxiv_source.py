@@ -6,8 +6,6 @@ CACHE_TTL_MINUTES = 60
 
 PERIOD_DAYS = {"week": 7, "month": 30, "year": 365, "5year": 1825}
 
-DEFAULT_QUERY = "AI ethics society technology policy"
-
 # arXivカテゴリでフィールドグループを定義
 FIELD_GROUPS = {
     "cs": "cat:cs.*",
@@ -31,11 +29,11 @@ def fetch_papers(period: str = "week", max_results: int = 40, field_group: str =
     if cache_key in _cache and _cache[cache_key]["expires"] > now:
         return _cache[cache_key]["papers"]
 
-    actual_query = query.strip() if query.strip() else DEFAULT_QUERY
-
-    # arXivは "all:(A B)" の括弧構文が効かないため、単語ごとに all: を付けて AND 結合する
-    query_clause = " AND ".join(f"all:{w}" for w in actual_query.split())
-    parts = [query_clause]
+    parts = []
+    stripped = query.strip()
+    if stripped:
+        # arXivは "all:(A B)" の括弧構文が効かないため、単語ごとに all: を付けて AND 結合する
+        parts.append(" AND ".join(f"all:{w}" for w in stripped.split()))
     fg_filter = FIELD_GROUPS.get(field_group, FIELD_GROUPS["cs"])
     if fg_filter:
         parts.append(fg_filter)
