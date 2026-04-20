@@ -2,4 +2,3 @@ arxiv
 flask>=2.0
 anthropic
 python-dotenv
-requests

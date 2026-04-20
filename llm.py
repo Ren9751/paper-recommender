@@ -3,29 +3,37 @@ import anthropic
 _client = anthropic.Anthropic()
 _MODEL = "claude-haiku-4-5-20251001"
 
+_title_cache: dict[str, str] = {}
+
 
 def translate_titles(papers: list[dict]) -> list[dict]:
-    titles = "\n".join(
-        f"{i+1}. {p['title']}" for i, p in enumerate(papers)
-    )
-    message = _client.messages.create(
-        model=_MODEL,
-        max_tokens=2048,
-        messages=[{
-            "role": "user",
-            "content": (
-                "以下の論文タイトルを日本語に翻訳してください。\n"
-                "番号付きリストの形式のまま、翻訳結果だけを出力してください。\n\n"
-                + titles
-            )
-        }]
-    )
-    lines = message.content[0].text.strip().split("\n")
-    for i, p in enumerate(papers):
-        if i < len(lines):
-            p["title_ja"] = lines[i].split(". ", 1)[-1].strip()
-        else:
-            p["title_ja"] = p["title"]
+    uncached = [p for p in papers if p["title"] not in _title_cache]
+
+    if uncached:
+        titles = "\n".join(
+            f"{i+1}. {p['title']}" for i, p in enumerate(uncached)
+        )
+        message = _client.messages.create(
+            model=_MODEL,
+            max_tokens=2048,
+            messages=[{
+                "role": "user",
+                "content": (
+                    "以下の論文タイトルを日本語に翻訳してください。\n"
+                    "番号付きリストの形式のまま、翻訳結果だけを出力してください。\n\n"
+                    + titles
+                )
+            }]
+        )
+        lines = message.content[0].text.strip().split("\n")
+        for i, p in enumerate(uncached):
+            if i < len(lines):
+                _title_cache[p["title"]] = lines[i].split(". ", 1)[-1].strip()
+            else:
+                _title_cache[p["title"]] = p["title"]
+
+    for p in papers:
+        p["title_ja"] = _title_cache.get(p["title"], p["title"])
     return papers
 
 

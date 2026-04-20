@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 起動方法
 
 ```bash
-cd paper-recommender
+pip install -r requirements.txt
 python app.py
 ```
 
@@ -23,21 +23,19 @@ ANTHROPIC_API_KEY=your_key_here
 
 ```
 app.py              # Flaskルーティング。各モジュールを呼び出す
-fetcher.py          # arXiv APIで論文取得。メモリキャッシュ（1時間TTL）あり
-llm.py              # Claude Haiku（claude-haiku-4-5-20251001）でタイトル翻訳・要約・重要性説明
-semantic_scholar.py # Semantic Scholar APIで被引用数を取得
-templates/index.html # Jinja2テンプレート。全UIロジックを含む
+arxiv_source.py     # arXiv APIで論文取得。メモリキャッシュ（1時間TTL）あり
+llm.py              # Claude Haiku（claude-haiku-4-5-20251001）でタイトル翻訳・要約・重要性説明。タイトル翻訳は永続メモリキャッシュあり
+templates/index.html # Jinja2テンプレート。全UIロジック（CSS・JSインライン）を含む
 ```
 
 ### データフロー
 
-1. `fetcher.py` が arXiv から cs.CY カテゴリの論文を取得（期間フィルタあり）
-2. `sort=popularity` のとき `semantic_scholar.py` で被引用数を付与してソート
-3. `llm.py` でタイトルを一括日本語翻訳してからテンプレートに渡す
-4. アブストラクト翻訳・AI要約・重要性説明はボタン押下時にAjaxで個別取得（`/translate_abstract`, `/summarize`, `/importance`）
+1. `arxiv_source.py` が arXiv API から論文を検索（カテゴリ・期間・キーワードフィルタあり、新着順）
+2. `llm.py` でタイトルを一括日本語翻訳してからテンプレートに渡す（未翻訳タイトルのみAPI呼び出し）
+3. アブストラクト翻訳・AI要約・重要性説明はボタン押下時にAjaxで個別取得（`/translate_abstract`, `/summarize`, `/importance`）
 
 ### 既知の制限
 
-- arXiv の submittedDate フィルタが不安定なため、期間フィルタは Python 側で cutoff 日付と比較する方式
-- FETCH_MAX が 40 固定のため、1ヶ月・1年の期間では最新40件しか返らない
-- Semantic Scholar API はキーなしで使用中（レート制限あり）。APIキー申請済み・承認待ち
+- `max_results=40` 固定のため、長期間の検索でも最新40件しか返らない
+- arXiv には人文系カテゴリがほぼ無いため、`field_group=humanities` は `cs.CY`（Computers and Society）+ 経済・金融系で近似
+- 被引用数は arXiv API で取得不可のため、ソートは新着順のみ

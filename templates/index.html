@@ -185,11 +185,6 @@
       color: #636366;
     }
 
-    .meta-tag.citation {
-      background: #ffe5d0;
-      color: #cc4400;
-    }
-
     .paper-actions {
       display: flex;
       gap: 6px;
@@ -420,8 +415,6 @@
           <div class="seg-control">
             <button type="button" class="seg-btn {% if sort == 'new' %}active{% endif %}"
               onclick="setSort('new')">新着順</button>
-            <button type="button" class="seg-btn {% if sort == 'popularity' %}active{% endif %}"
-              onclick="setSort('popularity')">引用数順</button>
           </div>
           <div class="seg-control">
             {% for fg_id, fg_label in field_groups.items() %}
@@ -447,9 +440,6 @@
             <div class="paper-meta">
               <span class="meta-tag author">{{ paper.authors[0] if paper.authors else '' }}{% if paper.authors | length > 1 %} ほか{% endif %}</span>
               <span class="meta-tag date">{{ paper.get('submitted', '') }}</span>
-              {% if paper.get('citation_count') is not none and sort == 'popularity' %}
-              <span class="meta-tag citation">引用 {{ paper.citation_count }}件</span>
-              {% endif %}
             </div>
 
             <script type="application/json" class="paper-data">

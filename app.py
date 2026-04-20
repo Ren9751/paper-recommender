@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from flask import Flask, render_template, request, jsonify
-from semantic_scholar import fetch_papers, is_cached
+from arxiv_source import fetch_papers, is_cached
 
 app = Flask(__name__)
 
@@ -37,9 +37,6 @@ def index():
 
     cached = is_cached(period, field_group, query)
     papers = fetch_papers(period=period, max_results=40, field_group=field_group, query=query)
-
-    if sort == "popularity":
-        papers.sort(key=lambda p: p["citation_count"], reverse=True)
 
     from llm import translate_titles
     papers = translate_titles(papers)
