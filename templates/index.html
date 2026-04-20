@@ -280,30 +280,6 @@
 
     .search-btn:hover { background: #e55a00; }
 
-    .search-presets {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .preset-chip {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      background: #f2f2f7;
-      color: #636366;
-      border: none;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .preset-chip:hover, .preset-chip.active {
-      background: #ff6600;
-      color: #fff;
-    }
-
     @media (max-width: 480px) {
       .hero { padding: 32px 16px 24px; }
       .hero-icon { width: 64px; height: 64px; font-size: 1.6rem; }
@@ -377,22 +353,6 @@
           placeholder="キーワードを入力（例: AI safety, fake news）"
           value="{{ query }}" autocomplete="off">
         <button type="submit" class="search-btn">検索</button>
-      </div>
-      <div class="search-presets">
-        <button type="button" class="preset-chip {% if query == 'AI safety' %}active{% endif %}"
-          onclick="setQuery('AI safety')">AI safety</button>
-        <button type="button" class="preset-chip {% if query == 'fake news' %}active{% endif %}"
-          onclick="setQuery('fake news')">フェイクニュース</button>
-        <button type="button" class="preset-chip {% if query == 'privacy' %}active{% endif %}"
-          onclick="setQuery('privacy')">プライバシー</button>
-        <button type="button" class="preset-chip {% if query == 'AI governance' %}active{% endif %}"
-          onclick="setQuery('AI governance')">ガバナンス</button>
-        <button type="button" class="preset-chip {% if query == 'algorithmic bias' %}active{% endif %}"
-          onclick="setQuery('algorithmic bias')">アルゴリズムバイアス</button>
-        <button type="button" class="preset-chip {% if query == 'misinformation' %}active{% endif %}"
-          onclick="setQuery('misinformation')">誤情報</button>
-        <button type="button" class="preset-chip {% if query == '' %}active{% endif %}"
-          onclick="setQuery('')">デフォルト</button>
       </div>
       <input type="hidden" name="sort" id="sort-input" value="{{ sort }}">
       <input type="hidden" name="period" id="period-input" value="{{ period }}">
@@ -484,11 +444,6 @@
     }
     function setFieldGroup(value) {
       document.getElementById('field-group-input').value = value;
-      showLoading();
-      document.getElementById('main-form').submit();
-    }
-    function setQuery(value) {
-      document.getElementById('query-input').value = value;
       showLoading();
       document.getElementById('main-form').submit();
     }

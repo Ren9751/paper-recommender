@@ -18,7 +18,7 @@ PERIODS = {
 
 FIELD_GROUP_LABELS = {
     "cs":         "CS",
-    "humanities": "哲学・法・社会",
+    "humanities": "社会",
     "all":        "全分野",
 }
 
