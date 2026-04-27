@@ -236,6 +236,71 @@
       border-radius: 14px;
     }
 
+    /* ページ送り */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      margin-top: 32px;
+      padding: 12px 8px;
+      flex-wrap: wrap;
+    }
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      height: 40px;
+      padding: 0 10px;
+      color: #1a1a1a;
+      text-decoration: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .page-link:hover {
+      background: #f2f2f7;
+    }
+    .page-link.current {
+      background: #1a1a1a;
+      color: #fff;
+      font-weight: 700;
+      cursor: default;
+      pointer-events: none;
+    }
+    .page-link.disabled {
+      color: #c7c7cc;
+      pointer-events: none;
+    }
+    .page-link.chevron {
+      font-size: 1.1rem;
+      letter-spacing: -2px;
+    }
+    .page-ellipsis {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 40px;
+      color: #8e8e93;
+      font-size: 1rem;
+      user-select: none;
+    }
+    .page-info {
+      width: 100%;
+      text-align: center;
+      color: #8e8e93;
+      font-size: 0.8rem;
+      margin-top: 8px;
+      flex-basis: 100%;
+    }
+    @media (max-width: 480px) {
+      .page-link { min-width: 36px; height: 36px; padding: 0 6px; font-size: 0.9rem; }
+      .page-ellipsis { min-width: 24px; height: 36px; }
+    }
+
     /* 検索バー */
     .search-wrap {
       max-width: 640px;
@@ -421,6 +486,59 @@
         <div class="empty">該当する論文が見つかりませんでした。<br>期間を変えてみてください。</div>
       {% endif %}
     </div>
+
+    {% if papers and (has_prev or has_next or total_pages > 1) %}
+    <div class="pagination">
+      {# 最初へ <<  #}
+      {% if has_prev %}
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=1) }}" aria-label="最初のページへ">«</a>
+      {% else %}
+        <span class="page-link chevron disabled" aria-hidden="true">«</span>
+      {% endif %}
+
+      {# 前へ <  #}
+      {% if has_prev %}
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=page-1) }}" aria-label="前のページへ">‹</a>
+      {% else %}
+        <span class="page-link chevron disabled" aria-hidden="true">‹</span>
+      {% endif %}
+
+      {# 数字ページ #}
+      {% if page_numbers %}
+        {% for n in page_numbers %}
+          {% if n == '...' %}
+            <span class="page-ellipsis" aria-hidden="true">…</span>
+          {% elif n == page %}
+            <span class="page-link current" aria-current="page">{{ n }}</span>
+          {% else %}
+            <a class="page-link" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=n) }}">{{ n }}</a>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        {# 総件数取得失敗時のフォールバック：現在ページ番号のみ表示 #}
+        <span class="page-link current">{{ page }}</span>
+      {% endif %}
+
+      {# 次へ >  #}
+      {% if has_next %}
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=page+1) }}" aria-label="次のページへ">›</a>
+      {% else %}
+        <span class="page-link chevron disabled" aria-hidden="true">›</span>
+      {% endif %}
+
+      {# 最後へ >>  #}
+      {% if total_pages > 0 and page < total_pages %}
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=total_pages) }}" aria-label="最後のページへ">»</a>
+      {% else %}
+        <span class="page-link chevron disabled" aria-hidden="true">»</span>
+      {% endif %}
+
+      <div class="page-info">
+        {{ page_start }}〜{{ page_end }}件目
+        {% if total_count > 0 %}/ 全 {{ '{:,}'.format(total_count) }} 件{% endif %}
+      </div>
+    </div>
+    {% endif %}
 
   </div>
 
