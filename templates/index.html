@@ -393,7 +393,7 @@
         <div class="paper-item">
           <div class="paper-number">{{ loop.index }}</div>
           <div class="paper-body">
-            <div class="paper-title-ja">{{ paper.get('title_ja', paper.title) }}</div>
+            <div class="paper-title-ja" data-title-en="{{ paper.title }}">{{ paper.title }}</div>
             <a class="paper-title-en" href="{{ paper.arxiv_id }}" target="_blank" rel="noopener">
               {{ paper.title }} ↗
             </a>
@@ -428,7 +428,29 @@
     // ページ読み込み完了時にスピナーを消す
     window.addEventListener('load', function() {
       document.getElementById('loading-overlay').style.display = 'none';
+      translateTitles();
     });
+
+    // 英語タイトルをまとめてサーバーに送り、日本語訳に差し替える
+    async function translateTitles() {
+      const els = document.querySelectorAll('.paper-title-ja[data-title-en]');
+      if (!els.length) return;
+      const titles = Array.from(els).map(el => el.dataset.titleEn);
+      try {
+        const res = await fetch('/translate_titles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ titles })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const map = data.translations || {};
+        els.forEach(el => {
+          const en = el.dataset.titleEn;
+          if (map[en]) el.textContent = map[en];
+        });
+      } catch (_) { /* 翻訳失敗時は英語タイトルのまま表示 */ }
+    }
     function showLoading() {
       document.getElementById('loading-overlay').style.display = 'flex';
     }

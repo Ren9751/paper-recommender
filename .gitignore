@@ -1,3 +1,4 @@
 .env
 __pycache__/
 *.pyc
+title_cache.json

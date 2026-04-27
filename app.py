@@ -38,9 +38,6 @@ def index():
     cached = is_cached(period, field_group, query)
     papers = fetch_papers(period=period, max_results=40, field_group=field_group, query=query)
 
-    from llm import translate_titles
-    papers = translate_titles(papers)
-
     return render_template(
         "index.html",
         papers=papers,
@@ -52,6 +49,16 @@ def index():
         cached=cached,
         query=query,
     )
+
+
+@app.route("/translate_titles", methods=["POST"])
+def translate_titles_route():
+    from llm import translate_title_strings
+    data = request.json
+    if not data or "titles" not in data or not isinstance(data["titles"], list):
+        return jsonify({"error": "titles (list) is required"}), 400
+    result = translate_title_strings(data["titles"])
+    return jsonify({"translations": result})
 
 
 @app.route("/translate_abstract", methods=["POST"])
