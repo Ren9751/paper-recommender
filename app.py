@@ -24,6 +24,10 @@ FIELD_GROUP_LABELS = {
 }
 
 PAGE_SIZE = 40
+# arXiv API は start < 10000 までしか結果を返さない仕様（2024年8月以降）
+# つまり最初の 10,000 件 = 250 ページが物理的な閲覧上限
+ARXIV_API_RESULT_LIMIT = 10000
+MAX_PAGE = ARXIV_API_RESULT_LIMIT // PAGE_SIZE
 
 
 def build_pagination_window(current: int, total: int, around: int = 2) -> list:
@@ -72,9 +76,12 @@ def index():
 
     # 総件数を先に取って総ページ数を計算（失敗時は0）
     total_count = fetch_total_count(period=period, field_group=field_group, query=query)
-    total_pages = math.ceil(total_count / PAGE_SIZE) if total_count > 0 else 0
+    total_pages_real = math.ceil(total_count / PAGE_SIZE) if total_count > 0 else 0
+    # arXiv API は最初の 10,000 件しか返さないので、ページ番号も 250 でキャップ
+    total_pages = min(total_pages_real, MAX_PAGE)
+    is_capped = total_pages_real > MAX_PAGE
 
-    # 総ページ数を超えるページ番号は最終ページにクランプ
+    # キャップを超えるページ番号は最終ページに引き戻す
     if total_pages > 0 and page > total_pages:
         page = total_pages
 
@@ -114,6 +121,8 @@ def index():
         has_prev=has_prev,
         total_pages=total_pages,
         total_count=total_count,
+        is_capped=is_capped,
+        accessible_count=min(total_count, ARXIV_API_RESULT_LIMIT),
         page_numbers=page_numbers,
         page_start=offset + 1 if papers else 0,
         page_end=offset + len(papers),

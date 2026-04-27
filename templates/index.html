@@ -536,7 +536,10 @@
 
       <div class="page-info">
         {{ page_start }}〜{{ page_end }}件目
-        {% if total_count > 0 %}/ 全 {{ '{:,}'.format(total_count) }} 件{% endif %}
+        {% if total_count > 0 %}
+          / 全 {{ '{:,}'.format(total_count) }} 件
+          {% if is_capped %}（arXiv API の制限により最初の {{ '{:,}'.format(accessible_count) }} 件 / {{ total_pages }} ページまで閲覧可能）{% endif %}
+        {% endif %}
       </div>
     </div>
     {% endif %}
