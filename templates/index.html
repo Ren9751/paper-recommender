@@ -120,10 +120,11 @@
     }
 
     .paper-number {
-      width: 28px;
+      min-width: 28px;
       height: 28px;
+      padding: 0 8px;
       background: #1c1c1e;
-      border-radius: 50%;
+      border-radius: 999px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -456,7 +457,7 @@
       {% if papers %}
         {% for paper in papers %}
         <div class="paper-item">
-          <div class="paper-number">{{ loop.index }}</div>
+          <div class="paper-number">{{ page_start + loop.index0 }}</div>
           <div class="paper-body">
             <div class="paper-title-ja" data-title-en="{{ paper.title }}">{{ paper.title }}</div>
             <a class="paper-title-en" href="{{ paper.arxiv_id }}" target="_blank" rel="noopener">
@@ -491,14 +492,14 @@
     <div class="pagination">
       {# 最初へ <<  #}
       {% if has_prev %}
-        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=1) }}" aria-label="最初のページへ">«</a>
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=1) }}" onclick="showLoading()" aria-label="最初のページへ">«</a>
       {% else %}
         <span class="page-link chevron disabled" aria-hidden="true">«</span>
       {% endif %}
 
       {# 前へ <  #}
       {% if has_prev %}
-        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=page-1) }}" aria-label="前のページへ">‹</a>
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=page-1) }}" onclick="showLoading()" aria-label="前のページへ">‹</a>
       {% else %}
         <span class="page-link chevron disabled" aria-hidden="true">‹</span>
       {% endif %}
@@ -511,7 +512,7 @@
           {% elif n == page %}
             <span class="page-link current" aria-current="page">{{ n }}</span>
           {% else %}
-            <a class="page-link" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=n) }}">{{ n }}</a>
+            <a class="page-link" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=n) }}" onclick="showLoading()">{{ n }}</a>
           {% endif %}
         {% endfor %}
       {% else %}
@@ -521,14 +522,14 @@
 
       {# 次へ >  #}
       {% if has_next %}
-        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=page+1) }}" aria-label="次のページへ">›</a>
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=page+1) }}" onclick="showLoading()" aria-label="次のページへ">›</a>
       {% else %}
         <span class="page-link chevron disabled" aria-hidden="true">›</span>
       {% endif %}
 
       {# 最後へ >>  #}
       {% if total_pages > 0 and page < total_pages %}
-        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=total_pages) }}" aria-label="最後のページへ">»</a>
+        <a class="page-link chevron" href="{{ url_for('index', period=period, sort=sort, field_group=field_group, query=query, page=total_pages) }}" onclick="showLoading()" aria-label="最後のページへ">»</a>
       {% else %}
         <span class="page-link chevron disabled" aria-hidden="true">»</span>
       {% endif %}

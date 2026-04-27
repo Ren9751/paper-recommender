@@ -74,29 +74,28 @@ def index():
     total_count = fetch_total_count(period=period, field_group=field_group, query=query)
     total_pages = math.ceil(total_count / PAGE_SIZE) if total_count > 0 else 0
 
-    # 不正なページ番号は1にクランプ（総ページ数を超えていてもそのまま受け入れて空表示）
+    # 総ページ数を超えるページ番号は最終ページにクランプ
     if total_pages > 0 and page > total_pages:
         page = total_pages
 
-    # 「次ページがあるか」のフォールバック判定用に1件多く要求する
-    all_papers = fetch_papers(
+    # offset を使って 1 ページ分だけ取得する（深いページでも 1 回の HTTP で済む）
+    offset = (page - 1) * PAGE_SIZE
+    # 総件数が取れていないときは「次ページがあるか」判定用に 1 件多く取る
+    fetch_count = PAGE_SIZE if total_pages > 0 else PAGE_SIZE + 1
+    fetched = fetch_papers(
         period=period,
-        max_results=page * PAGE_SIZE + 1,
+        max_results=fetch_count,
         field_group=field_group,
         query=query,
+        offset=offset,
     )
+    papers = fetched[:PAGE_SIZE]
 
-    start = (page - 1) * PAGE_SIZE
-    end = page * PAGE_SIZE
-    papers = all_papers[start:end]
-
+    has_prev = page > 1
     if total_pages > 0:
         has_next = page < total_pages
-        has_prev = page > 1
     else:
-        # 総件数が取れなかった場合は累積取得結果から推定
-        has_next = len(all_papers) > end
-        has_prev = page > 1
+        has_next = len(fetched) > PAGE_SIZE
 
     page_numbers = build_pagination_window(page, total_pages) if total_pages > 0 else []
 
@@ -116,8 +115,8 @@ def index():
         total_pages=total_pages,
         total_count=total_count,
         page_numbers=page_numbers,
-        page_start=start + 1 if papers else 0,
-        page_end=start + len(papers),
+        page_start=offset + 1 if papers else 0,
+        page_end=offset + len(papers),
     )
 
 

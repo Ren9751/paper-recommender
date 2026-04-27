@@ -1,14 +1,16 @@
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
-import arxiv
-
 _cache = {}
 CACHE_TTL_MINUTES = 60
 ARXIV_API_URL = "http://export.arxiv.org/api/query"
+ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
+OPENSEARCH_NS = {"opensearch": "http://a9.com/-/spec/opensearch/1.1/"}
+USER_AGENT = "paper-recommender/1.0"
 
 PERIOD_DAYS = {"week": 7, "month": 30, "year": 365, "5year": 1825}
 
@@ -19,7 +21,57 @@ FIELD_GROUPS = {
     "all": None,
 }
 
-_client = arxiv.Client(page_size=100, delay_seconds=3, num_retries=3)
+
+def _http_get(url: str, retries: int = 3) -> bytes | None:
+    """arXiv API への HTTP GET。429（Rate Limit）に出会ったら短い待機をはさんでリトライする。
+    成功時はレスポンス本文（bytes）、失敗時は None を返す。"""
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < retries - 1:
+                time.sleep(3 * (attempt + 1))  # 指数的に待機を伸ばす
+                continue
+            return None
+        except urllib.error.URLError:
+            if attempt < retries - 1:
+                time.sleep(2)
+                continue
+            return None
+    return None
+
+
+def _parse_arxiv_entry(entry) -> dict | None:
+    """atom feed の <entry> タグを論文 dict に変換する。
+    summary が無いエントリは return None で除外。"""
+    title = (entry.findtext("atom:title", default="", namespaces=ATOM_NS) or "").strip()
+    summary = (entry.findtext("atom:summary", default="", namespaces=ATOM_NS) or "").strip()
+    entry_id = (entry.findtext("atom:id", default="", namespaces=ATOM_NS) or "").strip()
+    published = entry.findtext("atom:published", default="", namespaces=ATOM_NS) or ""
+    authors = [
+        (a.findtext("atom:name", default="", namespaces=ATOM_NS) or "")
+        for a in entry.findall("atom:author", ATOM_NS)
+    ]
+
+    if not summary:
+        return None
+
+    submitted = ""
+    if published:
+        try:
+            submitted = datetime.fromisoformat(published.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+
+    return {
+        "arxiv_id": entry_id,
+        "title": title,
+        "abstract": summary,
+        "authors": authors,
+        "submitted": submitted,
+    }
 
 
 def _build_search_query(period: str, field_group: str, query: str, now: datetime) -> str:
@@ -64,58 +116,51 @@ def fetch_total_count(period: str = "week", field_group: str = "cs", query: str 
     url = f"{ARXIV_API_URL}?{params}"
 
     count = 0
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "paper-recommender/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            xml_data = resp.read()
-        root = ET.fromstring(xml_data)
-        ns = {"opensearch": "http://a9.com/-/spec/opensearch/1.1/"}
-        total_elem = root.find("opensearch:totalResults", ns)
-        if total_elem is not None and total_elem.text:
-            count = int(total_elem.text)
-    except (urllib.error.URLError, ET.ParseError, ValueError):
-        count = 0
+    xml_data = _http_get(url)
+    if xml_data is not None:
+        try:
+            root = ET.fromstring(xml_data)
+            total_elem = root.find("opensearch:totalResults", OPENSEARCH_NS)
+            if total_elem is not None and total_elem.text:
+                count = int(total_elem.text)
+        except (ET.ParseError, ValueError):
+            pass
 
     _cache[cache_key] = {"count": count, "expires": now + timedelta(minutes=CACHE_TTL_MINUTES)}
     return count
 
 
-def fetch_papers(period: str = "week", max_results: int = 40, field_group: str = "cs", query: str = "") -> list[dict]:
-    cache_key = f"{period}:{field_group}:{query}"
+def fetch_papers(period: str = "week", max_results: int = 40, field_group: str = "cs", query: str = "", offset: int = 0) -> list[dict]:
+    """指定 offset から最大 max_results 件の論文を取得する。
+    arXiv API の start パラメータを直接使うので、何ページ目だろうと1回の HTTP で済む。"""
+    cache_key = f"papers:{period}:{field_group}:{query}:{offset}:{max_results}"
     now = datetime.now(timezone.utc)
 
     cached = _cache.get(cache_key)
     if cached and cached["expires"] > now:
-        # 必要件数を満たしている、または arXiv 側を出し切っているならキャッシュから返す
-        if len(cached["papers"]) >= max_results or cached["exhausted"]:
-            return cached["papers"][:max_results]
+        return cached["papers"]
 
     search_query = _build_search_query(period, field_group, query, now)
-
-    search = arxiv.Search(
-        query=search_query,
-        max_results=max_results,
-        sort_by=arxiv.SortCriterion.SubmittedDate,
-        sort_order=arxiv.SortOrder.Descending,
-    )
+    params = urllib.parse.urlencode({
+        "search_query": search_query,
+        "start": offset,
+        "max_results": max_results,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+    })
+    url = f"{ARXIV_API_URL}?{params}"
 
     papers = []
-    for r in _client.results(search):
-        if not r.summary:
-            continue
-        papers.append({
-            "arxiv_id": r.entry_id,
-            "title": r.title.strip(),
-            "abstract": r.summary.strip(),
-            "authors": [a.name for a in r.authors],
-            "submitted": r.published.strftime("%Y-%m-%d") if r.published else "",
-        })
+    xml_data = _http_get(url)
+    if xml_data is not None:
+        try:
+            root = ET.fromstring(xml_data)
+            for entry in root.findall("atom:entry", ATOM_NS):
+                paper = _parse_arxiv_entry(entry)
+                if paper:
+                    papers.append(paper)
+        except ET.ParseError:
+            pass
 
-    # 要求より少なく返ってきたら arXiv 側にもうこれ以上ない、と判定
-    exhausted = len(papers) < max_results
-    _cache[cache_key] = {
-        "papers": papers,
-        "expires": now + timedelta(minutes=CACHE_TTL_MINUTES),
-        "exhausted": exhausted,
-    }
+    _cache[cache_key] = {"papers": papers, "expires": now + timedelta(minutes=CACHE_TTL_MINUTES)}
     return papers
